@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "XPX",
+    "P#P",
+    "XPX"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:red_sand"
+    },
+    "X": {
+      "item": "minecraft:gunpowder"
+    },
+    "P": {
+      "item": "minecraft:paper"
+    }
+  },
+  "result": {
+    "item": "minecraft:tnt"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "parent": "library:recipes/root",
+  "rewards": {
+    "recipes": [
+      "library:glass_pane_from_stained_glass_pane"
+    ]
+  },
+  "criteria": {
+    "has_water_bucket": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:water_bucket"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "library:glass_pane_from_stained_glass_pane"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_water_bucket",
+      "has_the_recipe"
+    ]
+  ]
+}

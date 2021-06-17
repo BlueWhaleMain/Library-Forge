@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#library:tp_head_safe",
+    "minecraft:water"
+  ]
+}

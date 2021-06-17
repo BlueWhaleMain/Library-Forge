@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#library:living/hostile",
+    "#library:undead/hostile"
+  ]
+}

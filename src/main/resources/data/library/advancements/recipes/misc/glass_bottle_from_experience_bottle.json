@@ -1,0 +1,32 @@
+{
+  "parent": "library:recipes/root",
+  "rewards": {
+    "recipes": [
+      "library:glass_bottle_from_experience_bottle"
+    ]
+  },
+  "criteria": {
+    "has_experience_bottle": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "item": "minecraft:experience_bottle"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "library:glass_bottle_from_experience_bottle"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_experience_bottle",
+      "has_the_recipe"
+    ]
+  ]
+}

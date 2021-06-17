@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "YXY",
+    "X#X",
+    "YXY"
+  ],
+  "key": {
+    "#": {
+      "item": "minecraft:pumpkin"
+    },
+    "X": {
+      "item": "minecraft:sugar"
+    },
+    "Y": {
+      "item": "minecraft:egg"
+    }
+  },
+  "result": {
+    "item": "minecraft:pumpkin_pie",
+    "count": 4
+  }
+}
