@@ -122,6 +122,14 @@ public final class Recipes {
     }
 
     /**
+     * 消费者函数接口
+     */
+    @FunctionalInterface
+    interface Consumer {
+        void consume(String resName);
+    }
+
+    /**
      * 资源加载器-原生 支持文件夹和jar
      */
     public static class ResourceLoader {
@@ -167,13 +175,5 @@ public final class Recipes {
                 }
             }
         }
-    }
-
-    /**
-     * 消费者函数接口
-     */
-    @FunctionalInterface
-    interface Consumer {
-        void consume(String resName);
     }
 }

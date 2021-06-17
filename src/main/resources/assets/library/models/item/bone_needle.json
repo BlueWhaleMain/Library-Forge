@@ -1,6 +1,6 @@
 {
-    "parent": "minecraft:item/generated",
-    "textures": {
-        "layer0": "library:item/bone_needle"
-    }
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "library:item/bone_needle"
+  }
 }
