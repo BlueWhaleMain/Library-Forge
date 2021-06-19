@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "library:item/magnet"
+    "layer0": "library:item/item_magnet"
   }
 }

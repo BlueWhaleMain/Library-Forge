@@ -1,9 +1,6 @@
 package com.bluewhalemain.library;
 
-import com.bluewhalemain.library.common.Items;
-import com.bluewhalemain.library.common.LootTables;
-import com.bluewhalemain.library.common.Recipes;
-import com.bluewhalemain.library.common.ResourceLoader;
+import com.bluewhalemain.library.common.*;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.server.MinecraftServer;
@@ -42,6 +39,7 @@ public class Library {
         iEventBus.addListener(this::processIMC);
         iEventBus.addListener(this::doClientStuff);
         MinecraftForge.EVENT_BUS.register(this);
+        Worlds.register();
     }
 
     /**
