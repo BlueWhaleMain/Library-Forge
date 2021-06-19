@@ -62,6 +62,8 @@ public final class Constants {
      */
     public static class Regex {
         public static final Pattern minecraftRecipesPatten = Pattern.compile(".*(data.minecraft.recipes.*\\.json)");
+        public static final Pattern minecraftLootTablesPatten = Pattern.compile(".*(data.minecraft.loot_tables.*\\.json)");
+        public static final Pattern minecraftLootTableNamePatten = Pattern.compile(".*data.minecraft.loot_tables.(.+)\\.json");
         public static final Pattern fileNamePatten = Pattern.compile(".*[\\\\/]([^.]*).*");
     }
 }

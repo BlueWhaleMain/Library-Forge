@@ -1,9 +1,12 @@
 package com.bluewhalemain.library;
 
 import com.bluewhalemain.library.common.Items;
+import com.bluewhalemain.library.common.LootTables;
 import com.bluewhalemain.library.common.Recipes;
+import com.bluewhalemain.library.common.ResourceLoader;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -70,7 +73,10 @@ public class Library {
      */
     @SubscribeEvent
     public void onServerStarting(FMLServerStartingEvent event) {
-        Recipes.disableRecipes(event.getServer());
+        ResourceLoader.init();
+        MinecraftServer minecraftServer = event.getServer();
+        Recipes.loadRecipes(minecraftServer);
+        LootTables.loadLootTables(minecraftServer);
     }
 
     /**
