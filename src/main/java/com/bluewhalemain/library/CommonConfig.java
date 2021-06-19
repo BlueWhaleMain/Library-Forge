@@ -24,22 +24,6 @@ public class CommonConfig {
      */
     public static final CommonConfig COMMON = pair.getLeft();
     public final ForgeConfigSpec.ConfigValue<List<String>> removedRecipes;
-
-    public enum RecipeLoadingMethod {
-        /**
-         * 不加载
-         */
-        NO,
-        /**
-         * 泛型检查安全加载
-         */
-        SAFE,
-        /**
-         * 跳过检查强制加载
-         */
-        FORCE
-    }
-
     public final ForgeConfigSpec.ConfigValue<RecipeLoadingMethod> recipeLoadingMethod;
 
     private CommonConfig(ForgeConfigSpec.Builder builder) {
@@ -70,5 +54,20 @@ public class CommonConfig {
         recipeLoadingMethod = builder.translation("config.library.recipe_loading_method").define("loading_method",
                 RecipeLoadingMethod.SAFE);
         builder.pop();
+    }
+
+    public enum RecipeLoadingMethod {
+        /**
+         * 不加载
+         */
+        NO,
+        /**
+         * 泛型检查安全加载
+         */
+        SAFE,
+        /**
+         * 跳过检查强制加载
+         */
+        FORCE
     }
 }
