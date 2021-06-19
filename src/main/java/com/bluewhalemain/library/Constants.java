@@ -46,6 +46,10 @@ public final class Constants {
          */
         public static final String resourceSpit = ":";
         /**
+         * 压缩包分割符
+         */
+        public static final String packSpit = "!";
+        /**
          * 合成表载入JsonObject
          *
          * @see JSONUtils#convertToJsonObject
@@ -57,8 +61,7 @@ public final class Constants {
      * 正则表达式
      */
     public static class Regex {
-        public static final Pattern folderPatten = Pattern.compile("file:/(.*)/pack.mcmeta");
-        public static final Pattern minecraftRecipesPatten = Pattern.compile(".*data.minecraft.recipes.*");
+        public static final Pattern minecraftRecipesPatten = Pattern.compile(".*(data.minecraft.recipes.*\\.json)");
         public static final Pattern fileNamePatten = Pattern.compile(".*[\\\\/]([^.]*).*");
     }
 }

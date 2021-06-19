@@ -10,7 +10,7 @@
       "item": "minecraft:redstone"
     },
     "#": {
-      "item": "minecraft:dropper"
+      "item": "minecraft:dispenser"
     },
     "T": {
       "tag": "minecraft:wooden_slabs"

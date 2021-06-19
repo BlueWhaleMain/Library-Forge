@@ -13,20 +13,23 @@ import net.minecraft.item.crafting.RecipeManager;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.JSONUtils;
 import net.minecraft.util.ResourceLocation;
-import org.apache.commons.lang3.StringUtils;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
+import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.net.JarURLConnection;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URL;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 合成表相关工具类
@@ -39,32 +42,20 @@ import java.util.regex.Matcher;
 public final class Recipes {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
+    private static final List<IRecipe<?>> replaceRecipes = new ArrayList<>();
 
-    /**
-     * 禁用合成表 仅服务器启动调用
-     *
-     * @param server 服务器对象
-     */
-    public static void disableRecipes(MinecraftServer server) {
-        RecipeManager recipeManager = server.getRecipeManager();
-        Collection<IRecipe<?>> recipeCollection = recipeManager.getRecipes();
-
-        recipeCollection.removeIf(recipe -> CommonConfig.COMMON.removedRecipes.get()
-                .contains(recipe.getId().toString()));
+    static {
         try {
-            ResourceLoader.loader(resName -> {
-                if (StringUtils.isBlank(resName)) {
-                    return;
-                }
-                if (Constants.Regex.minecraftRecipesPatten.matcher(resName).find()) {
-                    Matcher matcher = Constants.Regex.fileNamePatten.matcher(resName);
+            ResourceLoader.loader(resource -> {
+                Matcher matcher = Constants.Regex.minecraftRecipesPatten.matcher(resource.name);
+                if (matcher.find()) {
+                    String resName = matcher.group(1);
+                    matcher = Constants.Regex.fileNamePatten.matcher(resName);
                     if (matcher.matches()) {
                         try {
                             String name = (String.format("%s%s%s",
                                     Constants.Minecraft.id, Constants.Symbol.resourceSpit, matcher.group(1)));
-                            InputStream inputStream = Recipes.class.getClassLoader().getResourceAsStream(resName);
-                            assert inputStream != null;
-                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                            try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.inputStream))) {
                                 StringBuilder sb = new StringBuilder();
                                 String line;
                                 while ((line = reader.readLine()) != null) {
@@ -74,21 +65,42 @@ public final class Recipes {
                                 assert jsonElement != null;
                                 IRecipe<?> newRecipe = RecipeManager.fromJson(new ResourceLocation(name),
                                         JSONUtils.convertToJsonObject(jsonElement, Constants.Symbol.recipeConvent));
-                                recipeCollection.removeIf(recipe -> name.equals(recipe.getId().toString()));
-                                // 确保新的配方已经成功加载才执行替换
-                                recipeCollection.add(newRecipe);
+                                replaceRecipes.add(newRecipe);
                             }
                         } catch (Exception e) {
-                            LOGGER.error(e.getMessage(), e);
+                            LOGGER.error(e.getLocalizedMessage(), e);
                             LOGGER.warn(String.format("读取失败：%s", resName));
                         }
                     }
                 }
             });
+        } catch (IOException e) {
+            throw new RuntimeException("读取自身文件失败", e);
+        }
+    }
+
+    /**
+     * 禁用合成表 仅服务器启动调用
+     *
+     * @param server 服务器对象
+     */
+    public static void disableRecipes(MinecraftServer server) {
+        if (CommonConfig.RecipeLoadingMethod.NO.equals(CommonConfig.COMMON.recipeLoadingMethod.get())) {
+            return;
+        }
+        RecipeManager recipeManager = server.getRecipeManager();
+        Collection<IRecipe<?>> recipeCollection = recipeManager.getRecipes();
+
+        recipeCollection.removeIf(recipe -> CommonConfig.COMMON.removedRecipes.get()
+                .contains(recipe.getId().toString()));
+        recipeCollection.removeIf(recipe -> replaceRecipes.stream().anyMatch(iRecipe
+                -> recipe.getId().equals(iRecipe.getId())));
+        recipeCollection.addAll(replaceRecipes);
+        try {
             Recipes.replaceRecipes(recipeManager, recipeCollection);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-            LOGGER.warn("Minecraft合成表替换失败");
+        } catch (IllegalAccessException e) {
+            LOGGER.error(e.getLocalizedMessage(), e);
+            LOGGER.warn("合成表替换失败");
         }
     }
 
@@ -99,80 +111,115 @@ public final class Recipes {
      *
      * @param recipeManager 合成表管理器
      * @param recipes       所有的合成表（注意是全部）
-     * @throws NoSuchFieldException   合成表管理器没有recipes属性
      * @throws IllegalAccessException 合成表管理器无法访问
      */
     public static void replaceRecipes(RecipeManager recipeManager, Iterable<IRecipe<?>> recipes)
-            throws NoSuchFieldException, IllegalAccessException {
+            throws IllegalAccessException {
         Map<IRecipeType<?>, Map<ResourceLocation, IRecipe<?>>> map = Maps.newHashMap();
         recipes.forEach((recipe) -> {
             Map<ResourceLocation, IRecipe<?>> resourceLocationIRecipeMap = map.computeIfAbsent(recipe.getType(),
-                    (p_223390_0_) -> Maps.newHashMap());
+                    (recipeType) -> Maps.newHashMap());
             IRecipe<?> iRecipe = resourceLocationIRecipeMap.put(recipe.getId(), recipe);
             if (iRecipe != null) {
                 throw new IllegalStateException("Duplicate recipe ignored with ID " + recipe.getId());
             }
         });
-        // TODO 修改为类型注入 该方法在生产环境无效 字段被混淆
-        // class.getDeclaredFields()
-        Field field = recipeManager.getClass().getDeclaredField("recipes");
-        field.setAccessible(true);
-        field.set(recipeManager, ImmutableMap.copyOf(map));
-        field.setAccessible(false);
+        Field[] fields = recipeManager.getClass().getDeclaredFields();
+        for (Field field : fields) {
+            if (field.getType().equals(Map.class)) {
+                Type type = field.getGenericType();
+                if (type instanceof ParameterizedType) {
+                    Type[] actualTypeArguments = ((ParameterizedType) type).getActualTypeArguments();
+                    if (CommonConfig.RecipeLoadingMethod.SAFE.equals(CommonConfig.COMMON.recipeLoadingMethod.get())) {
+                        if (actualTypeArguments.length != 2) {
+                            break;
+                        }
+                        String[] conditions = {"net.minecraft.item.crafting.IRecipeType<?>",
+                                "java.util.Map<net.minecraft.util.ResourceLocation, net.minecraft.item.crafting.IRecipe<?>>"};
+                        for (int i = 0; i < actualTypeArguments.length; i++) {
+                            if (!conditions[i].equals(actualTypeArguments[i].getTypeName())) {
+                                break;
+                            }
+                        }
+                    }
+                    field.setAccessible(true);
+                    field.set(recipeManager, ImmutableMap.copyOf(map));
+                    field.setAccessible(false);
+                    LOGGER.info(String.format("替换了%d个配方", map.size()));
+                    break;
+                }
+            }
+        }
     }
 
     /**
-     * 消费者函数接口
+     * 资源类
      */
-    @FunctionalInterface
-    interface Consumer {
-        void consume(String resName);
+    static class Resource {
+        /**
+         * 文件名
+         */
+        private final String name;
+        /**
+         * 文件流
+         */
+        private final InputStream inputStream;
+
+        Resource(String name, InputStream inputStream) {
+            this.name = name;
+            this.inputStream = inputStream;
+        }
     }
 
     /**
      * 资源加载器-原生 支持文件夹和jar
      */
     public static class ResourceLoader {
-        private static void push(Consumer consumer, File[] files) {
+        private static void push(Consumer<Resource> consumer, File[] files) throws FileNotFoundException {
             if (files != null) {
                 for (File file : files) {
                     if (file.isDirectory()) {
                         push(consumer, file.listFiles());
                     } else if (file.isFile()) {
-                        consumer.consume(file.getAbsolutePath());
+                        consumer.accept(new Resource(file.getAbsolutePath(),
+                                new FileInputStream(file.getAbsolutePath())));
                     }
                 }
             }
         }
 
         /**
-         * 读取所有路径
+         * 读取所有文件
          *
          * @param consumer 传入消费者
-         * @throws IOException 读写异常
          */
-        public static void loader(Consumer consumer) throws IOException {
-            URL url = ResourceLoader.class.getClassLoader().getResource("pack.mcmeta");
+        public static void loader(Consumer<Resource> consumer) throws IOException {
+            String beacon = "pack.mcmeta";
+            Pattern folderPatten = Pattern.compile("file:/(.*)/" + beacon);
+            URL url = ResourceLoader.class.getClassLoader().getResource(beacon);
             assert url != null;
-            String urlStr = url.toString();
-            if (urlStr.contains("!")) {
-                // 找到!/ 截断之前的字符串
-                try (JarFile jarFile = ((JarURLConnection) new URL(urlStr.substring(0, urlStr.indexOf("!/") + 2))
-                        .openConnection()).getJarFile()) {
-                    Enumeration<JarEntry> jarEntryEnumeration = jarFile.entries();
-                    while (jarEntryEnumeration.hasMoreElements()) {
-                        JarEntry jarEntry = jarEntryEnumeration.nextElement();
-                        String entryName = jarEntry.getName();
-                        if (!jarEntry.isDirectory()) {
-                            consumer.consume(entryName);
+            String urlString = url.toString();
+            Matcher matcher = folderPatten.matcher(urlString);
+            if (urlString.contains("!")) {
+                List<ModInfo> mods = ModList.get().getMods();
+                for (ModInfo mod : mods) {
+                    if (mod.getModId().equals(Constants.Library.id)) {
+                        ModFileInfo modFileInfo = mod.getOwningFile();
+                        JarFile jarFile = new JarFile(modFileInfo.getFile().getFilePath().toString());
+                        Enumeration<JarEntry> jarEntryEnumeration = jarFile.entries();
+                        while (jarEntryEnumeration.hasMoreElements()) {
+                            JarEntry jarEntry = jarEntryEnumeration.nextElement();
+                            if (!jarEntry.isDirectory()) {
+                                consumer.accept(new Resource(jarEntry.getName(), jarFile.getInputStream(jarEntry)));
+                            }
                         }
+                        break;
                     }
                 }
+            } else if (matcher.find()) {
+                push(consumer, new File(matcher.group(1)).listFiles());
             } else {
-                Matcher matcher = Constants.Regex.folderPatten.matcher(urlStr);
-                if (matcher.find()) {
-                    push(consumer, new File(matcher.group(1)).listFiles());
-                }
+                throw new IllegalStateException("无法加载资源");
             }
         }
     }

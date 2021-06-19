@@ -25,9 +25,26 @@ public class CommonConfig {
     public static final CommonConfig COMMON = pair.getLeft();
     public final ForgeConfigSpec.ConfigValue<List<String>> removedRecipes;
 
+    public enum RecipeLoadingMethod {
+        /**
+         * 不加载
+         */
+        NO,
+        /**
+         * 泛型检查安全加载
+         */
+        SAFE,
+        /**
+         * 跳过检查强制加载
+         */
+        FORCE
+    }
+
+    public final ForgeConfigSpec.ConfigValue<RecipeLoadingMethod> recipeLoadingMethod;
+
     private CommonConfig(ForgeConfigSpec.Builder builder) {
         builder.push("recipes");
-        this.removedRecipes = builder.translation("config.library.remove_recipe").define("removed", Arrays.asList(
+        removedRecipes = builder.translation("config.library.remove_recipe").define("removed", Arrays.asList(
                 "minecraft:bone_block",
                 "minecraft:redstone_block",
                 "minecraft:diamond_block",
@@ -50,6 +67,8 @@ public class CommonConfig {
                 "minecraft:wheat",
                 "minecraft:hay_block"
         ));
+        recipeLoadingMethod = builder.translation("config.library.recipe_loading_method").define("loading_method",
+                RecipeLoadingMethod.SAFE);
         builder.pop();
     }
 }

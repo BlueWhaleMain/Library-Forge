@@ -18,6 +18,7 @@
   "item.library.gold": "§6金币§r",
   "itemGroup.library": "§9Library§r",
   "config.library.remove_recipe": "§c删除的配方§r",
+  "config.library.recipe_loading_method": "§9配方加载策略§r",
   "system.library.punctuation.colon": "：",
   "system.library.punctuation.exclamation": "！",
   "system.library.empty": "§c空§r",
